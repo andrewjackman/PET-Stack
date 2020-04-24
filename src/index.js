@@ -1,6 +1,5 @@
-window.addEventListener('load', () => {
-  document.querySelector('#app').innerHTML =
-    `<h1>
-      Hello from JS!
-    </h1>`;
-});
+import { Elm } from './Main.elm';
+
+Elm.Main.init({ node: document.querySelector('#app')});
+
+
