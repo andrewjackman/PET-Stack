@@ -13,7 +13,7 @@ guesses may also be invalid.
 -}
 type Guess
     = NotGuessed
-    | Guessed Int
+    | Guessed Order
     | InvalidGuess
 
 
@@ -72,7 +72,7 @@ update msg model =
                         newGuess =
                             case String.toInt model.guessInput of
                                 Just num ->
-                                    Guessed (num - secretNumber)
+                                    Guessed (compare num secretNumber)
 
                                 Nothing ->
                                     InvalidGuess
@@ -136,29 +136,30 @@ viewGuessInput =
 {-| Based on the difference, check if guess was too small, too big or correct.
 Render error messages or offer to reset the game if the guess was correct.
 -}
-viewResult : Int -> Html Msg
-viewResult difference =
-    if difference < 0 then
-        div []
-            [ p [] [ text "Too Small" ]
-            , viewGuessInput
-            ]
-
-    else if difference > 0 then
-        div []
-            [ p [] [ text "Too Big" ]
-            , viewGuessInput
-            ]
-
-    else
-        div []
-            [ p [] [ text "Correct" ]
-            , button
-                [ type_ "button"
-                , onClick Restart
+viewResult : Order -> Html Msg
+viewResult order =
+    case order of
+        LT ->
+            div []
+                [ p [] [ text "Too Small" ]
+                , viewGuessInput
                 ]
-                [ text "start over" ]
-            ]
+
+        GT ->
+            div []
+                [ p [] [ text "Too Big" ]
+                , viewGuessInput
+                ]
+
+        EQ ->
+            div []
+                [ p [] [ text "Correct" ]
+                , button
+                    [ type_ "button"
+                    , onClick Restart
+                    ]
+                    [ text "start over" ]
+                ]
 
 
 {-| We want integers between 0 and 100. Also we want the `GeneratedNumber`
