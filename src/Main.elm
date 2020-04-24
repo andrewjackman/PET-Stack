@@ -63,7 +63,17 @@ update msg model =
             ( { model | state = Playing num NotGuessed }, Cmd.none )
 
         GuessChange str ->
-            ( { model | guessInput = str }, Cmd.none )
+            let
+                newState =
+                    case model.state of
+                        Playing secretNumber _ ->
+                            -- set the guess to NotGuessed so that no text will be displayed
+                            Playing secretNumber NotGuessed
+
+                        _ ->
+                            model.state
+            in
+            ( { model | guessInput = str, state = newState }, Cmd.none )
 
         GuessSubmitted ->
             case model.state of
@@ -77,7 +87,7 @@ update msg model =
                                 Nothing ->
                                     InvalidGuess
                     in
-                    ( { model | state = Playing secretNumber newGuess }, Cmd.none )
+                    ( { model | state = Playing secretNumber newGuess, guessInput = "" }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
