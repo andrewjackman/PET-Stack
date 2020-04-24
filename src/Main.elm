@@ -1,7 +1,9 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (div, h1, text)
+import Html exposing (Html, button, div, h1, input, p, text)
+import Html.Attributes exposing (type_)
+import Html.Events exposing (onClick, onInput)
 import Random
 
 
@@ -30,6 +32,9 @@ type alias Model =
 
 type Msg
     = GeneratedNumber Int
+    | GuessChange String
+    | GuessSubmitted
+    | Restart
 
 
 main : Program () Model Msg
@@ -57,6 +62,29 @@ update msg model =
         GeneratedNumber num ->
             ( { model | state = Playing num NotGuessed }, Cmd.none )
 
+        GuessChange str ->
+            ( { model | guessInput = str }, Cmd.none )
+
+        GuessSubmitted ->
+            case model.state of
+                Playing secretNumber _ ->
+                    let
+                        newGuess =
+                            case String.toInt model.guessInput of
+                                Just num ->
+                                    Guessed (num - secretNumber)
+
+                                Nothing ->
+                                    InvalidGuess
+                    in
+                    ( { model | state = Playing secretNumber newGuess }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Restart ->
+            ( { model | state = Initializing }, generateSecretNumber )
+
 
 {-| We can set the document title and the body in the view.
 -}
@@ -71,12 +99,66 @@ view model =
                     Initializing ->
                         text "Generating Number"
 
-                    Playing secret guess ->
-                        text ("Our secret number is " ++ String.fromInt secret)
+                    Playing num guess ->
+                        case guess of
+                            NotGuessed ->
+                                viewGuessInput
+
+                            Guessed difference ->
+                                viewResult difference
+
+                            InvalidGuess ->
+                                div []
+                                    [ p [] [ text "You didn't enter a valid number" ]
+                                    , viewGuessInput
+                                    ]
                 ]
             ]
         ]
     }
+
+
+{-| Input and button to submit the guess. We are using `onInput` on the text field
+and `onClick` from the Html.Events module to trigger the respective messages which
+will cause the update function to run again
+-}
+viewGuessInput : Html Msg
+viewGuessInput =
+    div []
+        [ p [] [ text "What's your guess?" ]
+        , input [ type_ "text", onInput GuessChange ] []
+        , button [ type_ "button", onClick GuessSubmitted ]
+            [ text "Submit"
+            ]
+        ]
+
+
+{-| Based on the difference, check if guess was too small, too big or correct.
+Render error messages or offer to reset the game if the guess was correct.
+-}
+viewResult : Int -> Html Msg
+viewResult difference =
+    if difference < 0 then
+        div []
+            [ p [] [ text "Too Small" ]
+            , viewGuessInput
+            ]
+
+    else if difference > 0 then
+        div []
+            [ p [] [ text "Too Big" ]
+            , viewGuessInput
+            ]
+
+    else
+        div []
+            [ p [] [ text "Correct" ]
+            , button
+                [ type_ "button"
+                , onClick Restart
+                ]
+                [ text "start over" ]
+            ]
 
 
 {-| We want integers between 0 and 100. Also we want the `GeneratedNumber`
