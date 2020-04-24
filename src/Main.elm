@@ -7,7 +7,7 @@ type alias Model = {}
 type Msg = DoStuff
 
 
-main : Program Int Model Msg
+main : Program () Model Msg
 main =
     Browser.document
         { init = init
