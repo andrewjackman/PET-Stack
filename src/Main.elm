@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, button, div, h1, input, p, text)
-import Html.Attributes exposing (type_)
+import Html.Attributes exposing (class, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Random
 
@@ -86,14 +86,76 @@ update msg model =
             ( { model | state = Initializing }, generateSecretNumber )
 
 
-{-| We can set the document title and the body in the view.
--}
+commonButtonClasses : Html.Attribute msg
+commonButtonClasses =
+    class "p-2 text-white bg-blue-400 rounded shadow-lg focus:outline-none hover:bg-blue-600 focus:bg-blue-600"
+
+
+viewGuessInput : String -> Html Msg
+viewGuessInput guessInput =
+    div
+        [ class "flex flex-col flex-wrap items-center mx-auto mt-4 max-w-screen-sm md:flex-row"
+        , class "text-gray-600"
+        ]
+        [ p [ class "w-full mb-2" ] [ text "What's your guess?" ]
+        , input
+            [ type_ "text"
+            , value guessInput
+            , placeholder "13"
+            , onInput GuessChange
+            , class "w-full p-2 border border-green-400 hover:border-green-600 focus:border-green-600 md:flex-1"
+            , class "text-center rounded shadow focus:outline-none focus:shadow-outline"
+            ]
+            []
+        , button
+            [ type_ "button"
+            , onClick GuessSubmitted
+            , commonButtonClasses
+            , class "w-full mt-2 md:ml-4 md:mt-0 md:flex-1"
+            ]
+            [ text "Submit"
+            ]
+        ]
+
+
+viewResult : String -> Order -> Html Msg
+viewResult guessInput order =
+    let
+        resultClasses =
+            class "text-xl tracking-widest text-blue-600 uppercase"
+    in
+    case order of
+        LT ->
+            div []
+                [ p [ resultClasses ] [ text "Too Small" ]
+                , viewGuessInput guessInput
+                ]
+
+        GT ->
+            div []
+                [ p [ resultClasses ] [ text "Too Big" ]
+                , viewGuessInput guessInput
+                ]
+
+        EQ ->
+            div []
+                [ p [ resultClasses ] [ text "Correct" ]
+                , button
+                    [ type_ "button"
+                    , onClick Restart
+                    , commonButtonClasses
+                    , class "mt-2"
+                    ]
+                    [ text "Start Over" ]
+                ]
+
+
 view : Model -> Browser.Document Msg
 view model =
     { title = "PET Stack Guessing Game"
     , body =
-        [ div []
-            [ h1 [] [ text "PET Stack Guessing Game" ]
+        [ div [ class "flex flex-col items-center justify-center h-full px-4 text-center" ]
+            [ h1 [ class "pt-2 mb-4 text-4xl text-blue-600" ] [ text "PET Stack Guessing Game" ]
             , div []
                 [ case model.state of
                     Initializing ->
@@ -102,64 +164,23 @@ view model =
                     Playing num guess ->
                         case guess of
                             NotGuessed ->
-                                viewGuessInput
+                                div []
+                                    [ p [] [ text "" ]
+                                    , viewGuessInput model.guessInput
+                                    ]
 
                             Guessed difference ->
-                                viewResult difference
+                                viewResult model.guessInput difference
 
                             InvalidGuess ->
                                 div []
-                                    [ p [] [ text "You didn't enter a valid number" ]
-                                    , viewGuessInput
+                                    [ p [ class "text-red-500" ] [ text "You didn't enter a valid number" ]
+                                    , viewGuessInput model.guessInput
                                     ]
                 ]
             ]
         ]
     }
-
-
-{-| Input and button to submit the guess. We are using `onInput` on the text field
-and `onClick` from the Html.Events module to trigger the respective messages which
-will cause the update function to run again
--}
-viewGuessInput : Html Msg
-viewGuessInput =
-    div []
-        [ p [] [ text "What's your guess?" ]
-        , input [ type_ "text", onInput GuessChange ] []
-        , button [ type_ "button", onClick GuessSubmitted ]
-            [ text "Submit"
-            ]
-        ]
-
-
-{-| Based on the difference, check if guess was too small, too big or correct.
-Render error messages or offer to reset the game if the guess was correct.
--}
-viewResult : Order -> Html Msg
-viewResult order =
-    case order of
-        LT ->
-            div []
-                [ p [] [ text "Too Small" ]
-                , viewGuessInput
-                ]
-
-        GT ->
-            div []
-                [ p [] [ text "Too Big" ]
-                , viewGuessInput
-                ]
-
-        EQ ->
-            div []
-                [ p [] [ text "Correct" ]
-                , button
-                    [ type_ "button"
-                    , onClick Restart
-                    ]
-                    [ text "start over" ]
-                ]
 
 
 {-| We want integers between 0 and 100. Also we want the `GeneratedNumber`
